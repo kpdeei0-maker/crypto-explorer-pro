@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { CryptoTable } from "@/Crypto-defaultassets/components/CryptoTable";
 import { StatsCard } from "@/Crypto-defaultassets/components/StatsCard";
 import { useCryptoFetcher } from "@/Crypto-defaultassets/hooks/useCryptoFetcher";
+import { useGlobalStocksFetcher } from "@/Crypto-defaultassets/hooks/useGlobalStocksFetcher";
 import { 
   Download, 
   RefreshCw, 
@@ -16,18 +17,22 @@ import {
   TrendingUp,
   Upload,
   X,
-  FileJson
+  FileJson,
+  Building2,
+  Globe,
+  BarChart3,
+  Gem
 } from "lucide-react";
 
 const CryptoGenerator = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     cryptoList,
-    loading,
-    progress,
-    status,
+    loading: cryptoLoading,
+    progress: cryptoProgress,
+    status: cryptoStatus,
     fetchCryptoData,
-    exportToJson,
+    exportToJson: exportCryptoJson,
     importFromJson,
     clearImport,
     importedCount,
@@ -36,6 +41,21 @@ const CryptoGenerator = () => {
     binanceCount,
     coinpaprikaCount
   } = useCryptoFetcher();
+
+  const {
+    stockList,
+    loading: stockLoading,
+    progress: stockProgress,
+    status: stockStatus,
+    fetchGlobalStocks,
+    exportToJson: exportStocksJson,
+    usCount,
+    intlCount,
+    etfCount,
+    rawCount
+  } = useGlobalStocksFetcher();
+
+  const loading = cryptoLoading || stockLoading;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -139,22 +159,42 @@ const CryptoGenerator = () => {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
           <Button
             size="lg"
             onClick={fetchCryptoData}
             disabled={loading}
             className="glow-primary text-lg px-8"
           >
-            {loading ? (
+            {cryptoLoading ? (
               <>
                 <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
                 Pobieranie...
               </>
             ) : (
               <>
-                <Database className="w-5 h-5 mr-2" />
+                <Coins className="w-5 h-5 mr-2" />
                 Pobierz kryptowaluty
+              </>
+            )}
+          </Button>
+
+          <Button
+            size="lg"
+            onClick={fetchGlobalStocks}
+            disabled={loading}
+            variant="secondary"
+            className="text-lg px-8"
+          >
+            {stockLoading ? (
+              <>
+                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                Pobieranie...
+              </>
+            ) : (
+              <>
+                <Globe className="w-5 h-5 mr-2" />
+                Pobierz spółki globalne
               </>
             )}
           </Button>
@@ -163,53 +203,82 @@ const CryptoGenerator = () => {
             <Button
               size="lg"
               variant="outline"
-              onClick={exportToJson}
+              onClick={exportCryptoJson}
               className="border-accent text-accent hover:bg-accent hover:text-accent-foreground text-lg px-8"
             >
               <Download className="w-5 h-5 mr-2" />
-              Eksportuj JSON
+              Eksportuj Crypto JSON
+            </Button>
+          )}
+
+          {stockList.length > 0 && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={exportStocksJson}
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground text-lg px-8"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Eksportuj Stocks JSON
             </Button>
           )}
         </div>
 
         {/* Progress */}
-        {loading && (
+        {cryptoLoading && (
           <Card className="p-6 bg-card border-border">
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{status}</span>
-                <span className="text-primary font-mono">{progress}%</span>
+                <span className="text-muted-foreground">{cryptoStatus}</span>
+                <span className="text-primary font-mono">{cryptoProgress}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={cryptoProgress} className="h-2" />
             </div>
           </Card>
         )}
 
-        {/* Stats */}
+        {stockLoading && (
+          <Card className="p-6 bg-card border-border">
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{stockStatus}</span>
+                <span className="text-primary font-mono">{stockProgress}%</span>
+              </div>
+              <Progress value={stockProgress} className="h-2" />
+            </div>
+          </Card>
+        )}
+
+        {/* Crypto Stats */}
         {cryptoList.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard
-              title="Wszystkie"
-              value={cryptoList.length}
-              icon={Coins}
-              accent
-            />
-            <StatsCard
-              title="Binance API"
-              value={binanceCount}
-              icon={Zap}
-            />
-            <StatsCard
-              title="CoinPaprika"
-              value={coinpaprikaCount}
-              icon={TrendingUp}
-            />
-            <StatsCard
-              title="Stablecoiny"
-              value={cryptoList.filter(c => c.type === "stablecoin").length}
-              icon={Database}
-            />
-          </div>
+          <>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Coins className="w-5 h-5 text-primary" />
+              Statystyki kryptowalut
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatsCard title="Wszystkie" value={cryptoList.length} icon={Coins} accent />
+              <StatsCard title="Binance API" value={binanceCount} icon={Zap} />
+              <StatsCard title="CoinPaprika" value={coinpaprikaCount} icon={TrendingUp} />
+              <StatsCard title="Stablecoiny" value={cryptoList.filter(c => c.type === "stablecoin").length} icon={Database} />
+            </div>
+          </>
+        )}
+
+        {/* Stock Stats */}
+        {stockList.length > 0 && (
+          <>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Statystyki spółek globalnych
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatsCard title="Spółki US" value={usCount} icon={Building2} accent />
+              <StatsCard title="Spółki międzynarodowe" value={intlCount} icon={Globe} />
+              <StatsCard title="ETFy" value={etfCount} icon={BarChart3} />
+              <StatsCard title="Surowce" value={rawCount} icon={Gem} />
+            </div>
+          </>
         )}
 
         {/* Table */}
